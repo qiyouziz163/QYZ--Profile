@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>公司资料介绍 - 企优咨</title>
 
-    <!-- PDF.js 库 (CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 
     <style>
         :root {
@@ -37,7 +35,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* 工具栏 */
+        /* 工具栏保持不变 */
         .toolbar {
             position: sticky; top: 0; z-index: 100;
             background: var(--toolbar-bg);
@@ -64,17 +62,36 @@
         .page-info { font-size: 13px; color: var(--text-secondary); }
         .divider { width: 1px; height: 22px; background: #dce3ea; margin: 0 6px; }
 
-        /* 主内容 */
-        .main-container { max-width: 960px; margin: 0 auto; padding: 28px 16px 60px; }
-        .pages-wrapper { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        /* ✅ 关键修改：移除最大宽度，让内容随窗口变宽 */
+        .main-container {
+            width: 100%;
+            margin: 0 auto;
+            padding: 28px 24px 60px;      /* 略微增加两侧边距，保持呼吸感 */
+            box-sizing: border-box;
+        }
+
+        .pages-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
 
         .page-card {
-            background: var(--card-bg); border-radius: var(--radius);
-            box-shadow: var(--shadow-md); overflow: hidden; width: 100%;
-            display: flex; justify-content: center; position: relative;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            width: 100%;                  /* 卡片占满容器宽度 */
+            display: flex;
+            justify-content: center;
             animation: fadeIn 0.25s ease-out both;
         }
-        .page-card canvas { display: block; max-width: 100%; height: auto; }
+        .page-card canvas {
+            display: block;
+            max-width: 100%;              /* 确保图片不超出卡片 */
+            height: auto;
+        }
         .page-label {
             position: absolute; bottom: 10px; right: 14px;
             background: rgba(0,0,0,0.55); color: #fff; font-size: 11px;
@@ -82,7 +99,6 @@
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } }
 
-        /* 加载覆盖层（仅显示第一页前使用） */
         .loading-overlay {
             position: fixed; inset: 0; background: var(--bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -96,11 +112,9 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* 错误提示 */
         .error-container { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; }
         .error-container.visible { display: flex; }
 
-        /* 回到顶部 */
         .scroll-top-btn {
             position: fixed; bottom: 28px; right: 28px; z-index: 90;
             width: 44px; height: 44px; border-radius: 50%; background: #fff;
@@ -110,17 +124,17 @@
         }
         .scroll-top-btn.visible { opacity: 1; visibility: visible; }
 
+        /* 响应式：在移动端适当减小内边距 */
         @media (max-width: 768px) {
             .toolbar { padding: 8px 12px; }
             .btn { padding: 6px 10px; font-size: 12px; }
             .btn-icon { width: 32px; height: 32px; }
-            .main-container { padding: 16px 8px 40px; }
+            .main-container { padding: 16px 12px 40px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- 工具栏 -->
     <header class="toolbar" id="toolbar">
         <span class="toolbar-title">📄 公司资料介绍</span>
         <div style="display:flex; align-items:center; gap:4px;">
@@ -135,36 +149,30 @@
         </div>
     </header>
 
-    <!-- 内容区 -->
     <main class="main-container" id="mainContainer">
         <div class="pages-wrapper" id="pagesWrapper"></div>
     </main>
 
-    <!-- 初始加载提示（仅第一页渲染前显示） -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner"></div>
         <p>正在准备公司资料…</p>
     </div>
 
-    <!-- 错误信息 -->
     <div class="error-container" id="errorContainer">
         <h2>📁 无法加载PDF</h2>
         <p id="errorMessage">请确认文件“公司资料介绍-企优咨.pdf”已放于同目录下。</p>
         <button class="btn btn-primary" id="btnRetry">重新加载</button>
     </div>
 
-    <!-- 回到顶部 -->
     <button class="scroll-top-btn" id="scrollTopBtn" title="回到顶部">↑</button>
 
     <script>
         (function() {
-            // ---------- 配置 ----------
             const PDF_URL = './公司资料介绍-企优咨.pdf';
-            const QUALITY_FACTOR = 2.0;          // 高清渲染倍率（2.0 = 视网膜屏清晰）
+            const QUALITY_FACTOR = 2.0;
             const ZOOM_LEVELS = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
             const ZOOM_FIT_WIDTH = 'fit-width';
 
-            // DOM 元素
             const toolbar = document.getElementById('toolbar');
             const pagesWrapper = document.getElementById('pagesWrapper');
             const loadingOverlay = document.getElementById('loadingOverlay');
@@ -179,21 +187,18 @@
             const btnFitWidth = document.getElementById('btnFitWidth');
             const btnRetry = document.getElementById('btnRetry');
 
-            // 状态
             let pdfDoc = null;
             let totalPages = 0;
             let currentZoomMode = ZOOM_FIT_WIDTH;
             let currentZoomLevel = 1.0;
-            let renderedPages = new Set();        // 已经渲染的页码
+            let renderedPages = new Set();
             let isRendering = false;
             let abortController = null;
 
-            // ---------- PDF.js 配置 ----------
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
             pdfjsLib.GlobalWorkerOptions.cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
             pdfjsLib.GlobalWorkerOptions.cMapPacked = true;
 
-            // ---------- 辅助函数 ----------
             function debounce(fn, delay) {
                 let timer;
                 return function(...args) {
@@ -221,7 +226,6 @@
                 return mode === ZOOM_FIT_WIDTH ? '适合宽度' : Math.round(level * 100) + '%';
             }
 
-            // ---------- 渲染单页（返回canvas） ----------
             async function renderPageToCanvas(pageNum, displayScale, qualityFactor = QUALITY_FACTOR) {
                 const page = await pdfDoc.getPage(pageNum);
                 const renderScale = displayScale * qualityFactor;
@@ -238,7 +242,6 @@
                 return { canvas, pageNum, displayScale };
             }
 
-            // ---------- 创建页面卡片并插入DOM ----------
             function createAndAppendPageCard(canvasData) {
                 const card = document.createElement('div');
                 card.className = 'page-card';
@@ -250,7 +253,6 @@
                 label.textContent = canvasData.pageNum + ' / ' + totalPages;
                 card.appendChild(label);
 
-                // 按页码顺序插入
                 const existingCards = [...pagesWrapper.children].filter(c => c.dataset.page);
                 let insertBefore = null;
                 for (const c of existingCards) {
@@ -262,10 +264,8 @@
                 pagesWrapper.insertBefore(card, insertBefore);
             }
 
-            // ---------- 渐进式渲染剩余页面 ----------
             async function renderRemainingPages(displayScale) {
-                // 分批渲染，避免阻塞UI
-                const BATCH_SIZE = 2;  // 每批渲染2页，然后让出主线程
+                const BATCH_SIZE = 2;
                 for (let i = 2; i <= totalPages; i++) {
                     if (abortController?.signal.aborted) break;
                     if (renderedPages.has(i)) continue;
@@ -279,47 +279,37 @@
                         if (!abortController?.signal.aborted) console.warn('渲染第' + i + '页失败:', err);
                     }
 
-                    // 每渲染2页，暂停一小段时间让浏览器处理用户交互
                     if (i % BATCH_SIZE === 0) {
                         await new Promise(resolve => setTimeout(resolve, 0));
                     }
                 }
             }
 
-            // ---------- 全部重新渲染（缩放变化时调用） ----------
             async function reRenderAllPages(displayScale) {
-                if (isRendering) {
-                    abortController?.abort();
-                }
+                if (isRendering) abortController?.abort();
                 abortController = new AbortController();
                 isRendering = true;
 
-                // 清空画布，但保留卡片容器结构（实际会全部重建，简单处理）
                 pagesWrapper.innerHTML = '';
                 renderedPages.clear();
                 errorContainer.classList.remove('visible');
                 mainContainer.style.display = '';
 
                 try {
-                    // 第一页优先
                     const firstPageData = await renderPageToCanvas(1, displayScale, QUALITY_FACTOR);
                     if (abortController.signal.aborted) return;
                     renderedPages.add(1);
                     createAndAppendPageCard(firstPageData);
 
-                    // 后台渲染剩余页
                     renderRemainingPages(displayScale);
                 } catch (err) {
-                    if (!abortController.signal.aborted) {
-                        showError('渲染失败：' + err.message);
-                    }
+                    if (!abortController.signal.aborted) showError('渲染失败：' + err.message);
                 } finally {
                     isRendering = false;
                     updatePageInfo();
                 }
             }
 
-            // ---------- 加载PDF并启动首屏渲染 ----------
             async function loadPDF() {
                 pdfDoc = null;
                 totalPages = 0;
@@ -341,18 +331,12 @@
                     updatePageInfo();
 
                     const displayScale = getEffectiveDisplayScale();
-
-                    // 渲染第一页并立即显示
                     const firstPageData = await renderPageToCanvas(1, displayScale, QUALITY_FACTOR);
                     renderedPages.add(1);
                     createAndAppendPageCard(firstPageData);
 
-                    // 隐藏加载覆盖层（首屏已可见）
                     loadingOverlay.classList.add('hidden');
-
-                    // 后台逐步渲染剩余页面
                     renderRemainingPages(displayScale);
-
                 } catch (err) {
                     console.error(err);
                     loadingOverlay.classList.add('hidden');
@@ -371,7 +355,6 @@
                 zoomIndicator.textContent = formatZoomLabel(currentZoomMode, currentZoomLevel);
             }
 
-            // ---------- 缩放控制 ----------
             function changeZoom(mode, level) {
                 if (!pdfDoc || isRendering) return;
                 currentZoomMode = mode;
@@ -410,7 +393,6 @@
 
             function fitWidth() { if (pdfDoc) changeZoom(ZOOM_FIT_WIDTH, 1.0); }
 
-            // ---------- 事件绑定 ----------
             btnZoomIn.addEventListener('click', zoomIn);
             btnZoomOut.addEventListener('click', zoomOut);
             btnFitWidth.addEventListener('click', fitWidth);
@@ -436,7 +418,6 @@
                 else if (e.key === '0' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); fitWidth(); }
             });
 
-            // 启动
             loadPDF();
         })();
     </script>
